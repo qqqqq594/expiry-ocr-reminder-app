@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="사진과 소비기한을 저장하고 미리 확인할 수 있는 개인용 소비기한 정리 앱"
+    />
+    <title>소비기한 제품 정리함</title>
+    <style>
+      :root {
+        --safe-top: calc(env(safe-area-inset-top, 0px) + 14px);
+        --safe-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+        --bg:
+          radial-gradient(circle at top right, rgba(255, 204, 112, 0.14), transparent 28%),
+          radial-gradient(circle at bottom left, rgba(116, 193, 255, 0.12), transparent 22%),
+          linear-gradient(180deg, #0d1424 0%, #111a2e 100%);
+        --panel: rgba(16, 24, 42, 0.82);
+        --panel-strong: rgba(21, 31, 54, 0.95);
+        --line: rgba(255, 255, 255, 0.1);
+        --text: #f6f9ff;
+        --muted: #abb7d1;
+        --accent: #8bf0b7;
+        --accent-strong: #baffd3;
+        --warn: #ffcb70;
+        --danger: #ff9797;
+        --soft: rgba(255, 255, 255, 0.07);
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          "SF Pro Display",
+          "Apple SD Gothic Neo",
+          "Noto Sans KR",
+          "Segoe UI",
+          sans-serif;
+      }
+
+      body {
+        padding: var(--safe-top) 16px var(--safe-bottom);
+        -webkit-text-size-adjust: 100%;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+      }
+
+      .app {
+        width: min(100%, 1120px);
+        margin: 0 auto;
+      }
+
+      .hero {
+        margin-bottom: 16px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--accent-strong);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 14px 0 10px;
+        font-size: clamp(30px, 6vw, 46px);
+        line-height: 0.95;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 760px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 18px;
+        backdrop-filter: blur(14px);
+        box-shadow: var(--shadow);
+      }
+
+      .card-title {
+        margin: 0 0 14px;
+        font-size: 18px;
+      }
+
+      .card-copy {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .field-wrap label,
+      .mini-label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .field {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+      }
+
+      .field:focus {
+        outline: 2px solid rgba(186, 255, 211, 0.16);
+        border-color: rgba(186, 255, 211, 0.28);
+      }
+
+      .drop {
+        position: relative;
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+      }
+
+      .drop strong {
+        font-size: 17px;
+      }
+
+      .drop span {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .drop input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+
+      .preview-box {
+        display: grid;
+        gap: 10px;
+      }
+
+      .preview {
+        display: none;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        border-radius: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .photo-meta {
+        display: none;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .button-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .button {
+        min-height: 52px;
+        padding: 14px 18px;
+        border-radius: 18px;
+        font-weight: 700;
+        touch-action: manipulation;
+      }
+
+      .button-primary {
+        background: linear-gradient(135deg, #90f0bb 0%, #6dbfff 100%);
+        color: #091321;
+      }
+
+      .button-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+      }
+
+      .button-danger {
+        background: rgba(255, 151, 151, 0.14);
+        color: var(--danger);
+      }
+
+      .button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .summary-card {
+        padding: 16px;
+        border-radius: 22px;
+        background: var(--panel-strong);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .summary-main {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: baseline;
+      }
+
+      .summary-main strong {
+        font-size: 24px;
+      }
+
+      .summary-main span {
+        color: var(--warn);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .summary-sub {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .schedule {
+        display: grid;
+        gap: 10px;
+      }
+
+      .schedule-item {
+        display: grid;
+        grid-template-columns: 102px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 14px 16px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .schedule-item strong {
+        font-size: 15px;
+      }
+
+      .schedule-item span {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .schedule-item em {
+        color: var(--warn);
+        font-style: normal;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .filter-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .filter-chip {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .filter-chip.active {
+        background: rgba(139, 240, 183, 0.14);
+        border-color: rgba(139, 240, 183, 0.34);
+        color: var(--accent-strong);
+      }
+
+      .list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 12px;
+        padding: 12px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .item.active {
+        border-color: rgba(186, 255, 211, 0.36);
+        background: rgba(139, 240, 183, 0.1);
+      }
+
+      .item-photo {
+        width: 88px;
+        height: 88px;
+        object-fit: cover;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .item-body {
+        display: grid;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .item-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .item-title {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .item-sub {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 72px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: rgba(255, 203, 112, 0.12);
+        color: var(--warn);
+      }
+
+      .badge.expired {
+        background: rgba(255, 151, 151, 0.14);
+        color: var(--danger);
+      }
+
+      .badge.safe {
+        background: rgba(139, 240, 183, 0.14);
+        color: var(--accent-strong);
+      }
+
+      .item-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .mini-button {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+      }
+
+      .mini-button.danger {
+        color: var(--danger);
+        background: rgba(255, 151, 151, 0.12);
+      }
+
+      .empty {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .footnote {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .two {
+          grid-template-columns: 1fr;
+        }
+
+        .schedule-item {
+          grid-template-columns: 1fr;
+        }
+
+        .item {
+          grid-template-columns: 72px minmax(0, 1fr);
+        }
+
+        .item-photo {
+          width: 72px;
+          height: 72px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero">
+        <div class="eyebrow">Local Save + Date Planner</div>
+        <h1>소비기한 제품 정리함</h1>
+        <p class="subtitle">
+          제품 사진을 붙이고 소비기한만 직접 넣으면, 4주 전부터 당일까지 미리 확인할 날짜를 계산해준다.
+          저장한 항목은 이 기기 안에 남아서 앱 안 목록으로 계속 볼 수 있다.
+        </p>
+      </section>
+
+      <section class="layout">
+        <div class="stack">
+          <article class="card">
+            <h2 class="card-title">제품 추가</h2>
+            <p class="card-copy">
+              OCR 없이 간단하게 쓰는 버전이야. 사진을 붙이고 제품명과 소비기한만 직접 넣으면 된다.
+            </p>
+
+            <div class="grid two">
+              <div class="preview-box">
+                <label class="drop" for="photoInput">
+                  <strong>사진 첨부</strong>
+                  <span>iPhone에서는 카메라나 사진 보관함에서 고를 수 있어.</span>
+                  <input id="photoInput" type="file" accept="image/*" capture="environment" />
+                </label>
+                <img id="preview" class="preview" alt="제품 사진 미리보기" />
+                <div id="photoMeta" class="photo-meta"></div>
+              </div>
+
+              <div class="grid">
+                <div class="field-wrap">
+                  <label for="productName">제품명</label>
+                  <input
+                    id="productName"
+                    class="field"
+                    type="text"
+                    placeholder="예: 우유, 샐러드, 닭가슴살"
+                  />
+                </div>
+
+                <div class="field-wrap">
+                  <label for="expiryDate">소비기한</label>
+                  <input id="expiryDate" class="field" type="date" />
+                </div>
+
+                <div class="button-row">
+                  <button id="saveButton" class="button button-primary" type="button">
+                    저장하기
+                  </button>
+                  <button id="clearButton" class="button button-secondary" type="button">
+                    새로 입력
+                  </button>
+                  <button id="removePhotoButton" class="button button-danger" type="button">
+                    사진 지우기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2 class="card-title">날짜 계산</h2>
+
+            <div id="summaryCard" class="summary-card">
+              <div class="summary-main">
+                <strong id="summaryTitle">아직 소비기한이 입력되지 않았어</strong>
+                <span id="summaryBadge">날짜 대기</span>
+              </div>
+              <div id="summarySub" class="summary-sub">
+                제품명과 소비기한을 넣으면 아래에서 4주 전부터 당일까지 자동 계산해준다.
+              </div>
+            </div>
+
+            <div id="scheduleList" class="schedule" style="margin-top: 12px">
+              <div class="empty">소비기한을 입력하면 일정이 여기에 표시돼.</div>
+            </div>
+
+            <div class="button-row" style="margin-top: 14px">
+              <button id="copyButton" class="button button-secondary" type="button" disabled>
+                일정 텍스트 복사
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <article class="card">
+          <h2 class="card-title">저장된 제품 목록</h2>
+          <p class="card-copy">
+            저장하면 이 기기 안에 남는다. 항목을 누르면 다시 불러와서 사진과 날짜 계산을 바로 볼 수 있어.
+          </p>
+
+          <div class="filter-row">
+            <button class="filter-chip active" data-filter="all" type="button">전체</button>
+            <button class="filter-chip" data-filter="soon" type="button">임박</button>
+            <button class="filter-chip" data-filter="expired" type="button">지난 제품</button>
+          </div>
+
+          <div id="itemList" class="list" style="margin-top: 14px">
+            <div class="empty">아직 저장된 제품이 없어. 왼쪽에서 첫 제품을 넣어보자.</div>
+          </div>
+
+          <p class="footnote" style="margin-top: 14px">
+            사진은 기기 안 저장 공간을 아끼려고 앱 안에서 조금 줄여서 저장한다. 너무 많은 대용량 사진을
+            넣으면 브라우저 저장 한도에 걸릴 수 있다.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const schedules = [
+        { label: "4주 전", daysBefore: 28 },
+        { label: "3주 전", daysBefore: 21 },
+        { label: "2주 전", daysBefore: 14 },
+        { label: "1주 전", daysBefore: 7 },
+        { label: "3일 전", daysBefore: 3 },
+        { label: "1일 전", daysBefore: 1 },
+        { label: "당일", daysBefore: 0 },
+      ];
+
+      const storageKey = "expiry-organizer-items-v1";
+      const state = {
+        items: loadItems(),
+        activeFilter: "all",
+        editingId: null,
+        draftPhoto: "",
+        draftPhotoName: "",
+      };
+
+      const photoInput = document.getElementById("photoInput");
+      const preview = document.getElementById("preview");
+      const photoMeta = document.getElementById("photoMeta");
+      const productNameInput = document.getElementById("productName");
+      const expiryDateInput = document.getElementById("expiryDate");
+      const saveButton = document.getElementById("saveButton");
+      const clearButton = document.getElementById("clearButton");
+      const removePhotoButton = document.getElementById("removePhotoButton");
+      const summaryTitle = document.getElementById("summaryTitle");
+      const summaryBadge = document.getElementById("summaryBadge");
+      const summarySub = document.getElementById("summarySub");
+      const scheduleList = document.getElementById("scheduleList");
+      const copyButton = document.getElementById("copyButton");
+      const itemList = document.getElementById("itemList");
+      const filterButtons = [...document.querySelectorAll("[data-filter]")];
+
+      photoInput.addEventListener("change", onPhotoChange);
+      productNameInput.addEventListener("input", renderSchedule);
+      expiryDateInput.addEventListener("input", renderSchedule);
+      saveButton.addEventListener("click", saveItem);
+      clearButton.addEventListener("click", resetDraft);
+      removePhotoButton.addEventListener("click", removePhoto);
+      copyButton.addEventListener("click", copySchedule);
+      filterButtons.forEach((button) =>
+        button.addEventListener("click", () => {
+          state.activeFilter = button.dataset.filter;
+          renderFilterButtons();
+          renderItemList();
+        }),
+      );
+
+      function loadItems() {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (!raw) {
+            return [];
+          }
+
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          console.error(error);
+          return [];
+        }
+      }
+
+      function persistItems() {
+        localStorage.setItem(storageKey, JSON.stringify(state.items));
+      }
+
+      async function onPhotoChange(event) {
+        const [file] = event.target.files || [];
+        if (!file) {
+          return;
+        }
+
+        try {
+          const dataUrl = await resizeImage(file);
+          state.draftPhoto = dataUrl;
+          state.draftPhotoName = file.name;
+          renderPhotoPreview();
+        } catch (error) {
+          console.error(error);
+          alert("사진을 읽지 못했어. 다른 사진으로 다시 시도해줘.");
+        }
+      }
+
+      function resizeImage(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const image = new Image();
+            image.onload = () => {
+              const maxEdge = 960;
+              const scale = Math.min(1, maxEdge / Math.max(image.width, image.height));
+              const width = Math.max(1, Math.round(image.width * scale));
+              const height = Math.max(1, Math.round(image.height * scale));
+              const canvas = document.createElement("canvas");
+              canvas.width = width;
+              canvas.height = height;
+              const context = canvas.getContext("2d");
+
+              if (!context) {
+                reject(new Error("Canvas unavailable"));
+                return;
+              }
+
+              context.drawImage(image, 0, 0, width, height);
+              resolve(canvas.toDataURL("image/jpeg", 0.82));
+            };
+            image.onerror = reject;
+            image.src = reader.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function renderPhotoPreview() {
+        if (!state.draftPhoto) {
+          preview.style.display = "none";
+          preview.removeAttribute("src");
+          photoMeta.style.display = "none";
+          photoMeta.textContent = "";
+          return;
+        }
+
+        preview.src = state.draftPhoto;
+        preview.style.display = "block";
+        photoMeta.textContent = state.draftPhotoName
+          ? `현재 사진: ${state.draftPhotoName}`
+          : "현재 사진이 저장될 예정이야.";
+        photoMeta.style.display = "block";
+      }
+
+      function removePhoto() {
+        state.draftPhoto = "";
+        state.draftPhotoName = "";
+        photoInput.value = "";
+        renderPhotoPreview();
+      }
+
+      function saveItem() {
+        const productName = productNameInput.value.trim();
+        const expiryDate = expiryDateInput.value;
+
+        if (!productName) {
+          alert("제품명을 먼저 입력해줘.");
+          productNameInput.focus();
+          return;
+        }
+
+        if (!expiryDate) {
+          alert("소비기한 날짜를 먼저 선택해줘.");
+          expiryDateInput.focus();
+          return;
+        }
+
+        const now = new Date().toISOString();
+        if (state.editingId) {
+          state.items = state.items.map((item) =>
+            item.id === state.editingId
+              ? {
+                  ...item,
+                  productName,
+                  expiryDate,
+                  photo: state.draftPhoto,
+                  updatedAt: now,
+                }
+              : item,
+          );
+        } else {
+          state.items.unshift({
+            id: crypto.randomUUID(),
+            productName,
+            expiryDate,
+            photo: state.draftPhoto,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+
+        persistItems();
+        renderItemList();
+        renderSchedule();
+        saveButton.textContent = "저장하기";
+        alert(state.editingId ? "수정해서 저장했어." : "제품을 저장했어.");
+        if (!state.editingId) {
+          resetDraft();
+        }
+      }
+
+      function resetDraft() {
+        state.editingId = null;
+        productNameInput.value = "";
+        expiryDateInput.value = "";
+        saveButton.textContent = "저장하기";
+        removePhoto();
+        renderItemList();
+        renderSchedule();
+      }
+
+      function loadItem(itemId) {
+        const item = state.items.find((entry) => entry.id === itemId);
+        if (!item) {
+          return;
+        }
+
+        state.editingId = item.id;
+        productNameInput.value = item.productName;
+        expiryDateInput.value = item.expiryDate;
+        state.draftPhoto = item.photo || "";
+        state.draftPhotoName = item.productName;
+        saveButton.textContent = "수정 저장";
+        renderPhotoPreview();
+        renderItemList();
+        renderSchedule();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function deleteItem(itemId) {
+        const item = state.items.find((entry) => entry.id === itemId);
+        if (!item) {
+          return;
+        }
+
+        const shouldDelete = confirm(`${item.productName} 항목을 삭제할까?`);
+        if (!shouldDelete) {
+          return;
+        }
+
+        state.items = state.items.filter((entry) => entry.id !== itemId);
+        persistItems();
+
+        if (state.editingId === itemId) {
+          resetDraft();
+        } else {
+          renderItemList();
+        }
+      }
+
+      function renderFilterButtons() {
+        filterButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.filter === state.activeFilter);
+        });
+      }
+
+      function renderItemList() {
+        const visibleItems = getFilteredItems();
+        if (visibleItems.length === 0) {
+          const copy =
+            state.activeFilter === "all"
+              ? "아직 저장된 제품이 없어. 왼쪽에서 첫 제품을 넣어보자."
+              : "이 필터에 해당하는 제품이 아직 없어.";
+          itemList.innerHTML = `<div class="empty">${copy}</div>`;
+          return;
+        }
+
+        itemList.innerHTML = "";
+        visibleItems.forEach((item) => {
+          const { daysLeft, badgeLabel, badgeClass } = getExpiryMeta(item.expiryDate);
+          const card = document.createElement("article");
+          card.className = `item${item.id === state.editingId ? " active" : ""}`;
+          card.innerHTML = `
+            <img class="item-photo" src="${item.photo || createPlaceholderSvg(item.productName)}" alt="${escapeHtml(item.productName)} 사진" />
+            <div class="item-body">
+              <div class="item-header">
+                <div>
+                  <h3 class="item-title">${escapeHtml(item.productName)}</h3>
+                  <p class="item-sub">소비기한 ${formatFullDateFromIso(item.expiryDate)}</p>
+                </div>
+                <div class="badge ${badgeClass}">${badgeLabel}</div>
+              </div>
+              <div class="item-sub">${daysLeft >= 0 ? `${daysLeft}일 남음` : `${Math.abs(daysLeft)}일 지남`}</div>
+              <div class="item-actions">
+                <button class="mini-button" type="button" data-action="open">열기</button>
+                <button class="mini-button danger" type="button" data-action="delete">삭제</button>
+              </div>
+            </div>
+          `;
+
+          card.querySelector('[data-action="open"]').addEventListener("click", () => loadItem(item.id));
+          card.querySelector('[data-action="delete"]').addEventListener("click", () => deleteItem(item.id));
+          itemList.appendChild(card);
+        });
+      }
+
+      function getFilteredItems() {
+        const sorted = [...state.items].sort((left, right) => left.expiryDate.localeCompare(right.expiryDate));
+        return sorted.filter((item) => {
+          const { daysLeft } = getExpiryMeta(item.expiryDate);
+          if (state.activeFilter === "soon") {
+            return daysLeft >= 0 && daysLeft <= 7;
+          }
+          if (state.activeFilter === "expired") {
+            return daysLeft < 0;
+          }
+          return true;
+        });
+      }
+
+      function getExpiryMeta(iso) {
+        const target = parseIsoDate(iso);
+        if (!target) {
+          return { daysLeft: 0, badgeLabel: "날짜 없음", badgeClass: "" };
+        }
+
+        const today = startOfDay(new Date());
+        const diffDays = Math.round((target - today) / 86400000);
+        if (diffDays < 0) {
+          return { daysLeft: diffDays, badgeLabel: "지난 제품", badgeClass: "expired" };
+        }
+        if (diffDays <= 7) {
+          return { daysLeft: diffDays, badgeLabel: `D-${diffDays}`, badgeClass: "" };
+        }
+        return { daysLeft: diffDays, badgeLabel: "여유 있음", badgeClass: "safe" };
+      }
+
+      function renderSchedule() {
+        const productName = productNameInput.value.trim();
+        const expiryDate = expiryDateInput.value;
+
+        if (!expiryDate) {
+          summaryTitle.textContent = "아직 소비기한이 입력되지 않았어";
+          summaryBadge.textContent = "날짜 대기";
+          summarySub.textContent =
+            "제품명과 소비기한을 넣으면 아래에서 4주 전부터 당일까지 자동 계산해준다.";
+          scheduleList.innerHTML = '<div class="empty">소비기한을 입력하면 일정이 여기에 표시돼.</div>';
+          copyButton.disabled = true;
+          return;
+        }
+
+        const expiry = parseIsoDate(expiryDate);
+        if (!expiry) {
+          return;
+        }
+
+        const today = startOfDay(new Date());
+        const daysLeft = Math.round((expiry - today) / 86400000);
+        const safeName = productName || "이 제품";
+
+        summaryTitle.textContent = `${safeName} 소비기한 ${formatFullDate(expiry)}`;
+        summaryBadge.textContent =
+          daysLeft > 0 ? `D-${daysLeft}` : daysLeft === 0 ? "오늘 마감" : `${Math.abs(daysLeft)}일 지남`;
+        summarySub.textContent =
+          daysLeft >= 0
+            ? `오늘 기준으로 ${daysLeft}일 남았어. 아래 날짜를 미리알림이나 메모에 그대로 옮겨 쓰면 된다.`
+            : `이 제품은 이미 소비기한이 지났어. 그래도 참고용으로 전체 일정을 그대로 보여줄게.`;
+
+        scheduleList.innerHTML = "";
+        schedules.forEach((item) => {
+          const target = new Date(expiry);
+          target.setDate(target.getDate() - item.daysBefore);
+          const diff = Math.round((startOfDay(target) - today) / 86400000);
+          const row = document.createElement("div");
+          row.className = "schedule-item";
+          row.innerHTML = `
+            <strong>${item.label}</strong>
+            <span>${formatFullDate(target)}</span>
+            <em>${diff > 0 ? `D-${diff}` : diff === 0 ? "오늘" : `${Math.abs(diff)}일 지남`}</em>
+          `;
+          scheduleList.appendChild(row);
+        });
+
+        copyButton.disabled = false;
+      }
+
+      async function copySchedule() {
+        const productName = productNameInput.value.trim() || "이 제품";
+        const expiryDate = expiryDateInput.value;
+        const expiry = parseIsoDate(expiryDate);
+        if (!expiry) {
+          return;
+        }
+
+        const lines = [
+          `${productName} 소비기한: ${formatFullDate(expiry)}`,
+          "",
+          ...schedules.map((item) => {
+            const target = new Date(expiry);
+            target.setDate(target.getDate() - item.daysBefore);
+            return `${item.label}: ${formatFullDate(target)}`;
+          }),
+        ];
+
+        try {
+          await navigator.clipboard.writeText(lines.join("\n"));
+          alert("일정 텍스트를 복사했어.");
+        } catch (error) {
+          console.error(error);
+          alert("복사를 못 했어. 다시 한 번 눌러봐.");
+        }
+      }
+
+      function parseIsoDate(iso) {
+        if (!iso) {
+          return null;
+        }
+
+        const [year, month, day] = iso.split("-").map(Number);
+        if (!year || !month || !day) {
+          return null;
+        }
+
+        const date = new Date(year, month - 1, day);
+        if (
+          date.getFullYear() !== year ||
+          date.getMonth() !== month - 1 ||
+          date.getDate() !== day
+        ) {
+          return null;
+        }
+
+        return startOfDay(date);
+      }
+
+      function startOfDay(date) {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      }
+
+      function formatFullDate(date) {
+        const weekday = ["일", "월", "화", "수", "목", "금", "토"][date.getDay()];
+        return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} (${weekday})`;
+      }
+
+      function formatFullDateFromIso(iso) {
+        const date = parseIsoDate(iso);
+        return date ? formatFullDate(date) : "날짜 없음";
+      }
+
+      function createPlaceholderSvg(label) {
+        const safe = escapeHtml((label || "제품").slice(0, 10));
+        return `data:image/svg+xml;utf8,${encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#223456"/>
+                <stop offset="100%" stop-color="#1a2640"/>
+              </linearGradient>
+            </defs>
+            <rect width="240" height="240" rx="34" fill="url(#g)"/>
+            <circle cx="120" cy="94" r="42" fill="#93f0bc" opacity="0.18"/>
+            <text x="120" y="148" font-family="Apple SD Gothic Neo, sans-serif" font-size="28" text-anchor="middle" fill="#f6f9ff">${safe}</text>
+          </svg>`,
+        )}`;
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      renderPhotoPreview();
+      renderFilterButtons();
+      renderItemList();
+      renderSchedule();
+    </script>
+  </body>
+</html>
