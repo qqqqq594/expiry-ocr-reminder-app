@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Expiry Organizer Icon</title>
+  <desc id="desc">Dark glass storage organizer icon with boxes and an expiry badge.</desc>
+  <defs>
+    <linearGradient id="bg" x1="158" y1="118" x2="862" y2="920" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#172745"/>
+      <stop offset="0.52" stop-color="#111d34"/>
+      <stop offset="1" stop-color="#0a1222"/>
+    </linearGradient>
+    <radialGradient id="glowTop" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(784 188) rotate(180) scale(318)">
+      <stop offset="0" stop-color="#89f3bc" stop-opacity="0.92"/>
+      <stop offset="0.42" stop-color="#89f3bc" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#89f3bc" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowBottom" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(230 834) rotate(-12) scale(346)">
+      <stop offset="0" stop-color="#70c1ff" stop-opacity="0.74"/>
+      <stop offset="1" stop-color="#70c1ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="278" y1="170" x2="768" y2="824" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="0.46" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="glassStroke" x1="252" y1="168" x2="778" y2="854" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.44"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.12"/>
+    </linearGradient>
+    <linearGradient id="badge" x1="620" y1="282" x2="768" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#93f0bc"/>
+      <stop offset="1" stop-color="#79bfff"/>
+    </linearGradient>
+    <linearGradient id="boxFace" x1="308" y1="420" x2="706" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd996"/>
+      <stop offset="1" stop-color="#d3a466"/>
+    </linearGradient>
+    <linearGradient id="boxTop" x1="314" y1="346" x2="702" y2="538" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe8bd"/>
+      <stop offset="1" stop-color="#e3ba7c"/>
+    </linearGradient>
+    <filter id="shadow" x="156" y="118" width="724" height="808" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="42" stdDeviation="44" flood-color="#050b15" flood-opacity="0.42"/>
+    </filter>
+    <filter id="blur" x="0" y="0" width="1024" height="1024" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="236" fill="url(#bg)"/>
+  <ellipse cx="784" cy="188" rx="250" ry="214" fill="url(#glowTop)" filter="url(#blur)"/>
+  <ellipse cx="226" cy="836" rx="280" ry="248" fill="url(#glowBottom)" filter="url(#blur)"/>
+  <circle cx="276" cy="178" r="110" fill="#ffffff" fill-opacity="0.12" filter="url(#blur)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="214" y="160" width="596" height="704" rx="176" fill="url(#glass)"/>
+    <rect x="214.5" y="160.5" width="595" height="703" rx="175.5" fill="none" stroke="url(#glassStroke)"/>
+    <path d="M258 194C336 170 442 160 524 168" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-linecap="round" stroke-width="12"/>
+
+    <rect x="286" y="282" width="452" height="96" rx="48" fill="#ffffff" fill-opacity="0.08"/>
+    <rect x="286.5" y="282.5" width="451" height="95" rx="47.5" fill="none" stroke="#ffffff" stroke-opacity="0.16"/>
+    <circle cx="348" cy="330" r="14" fill="#8cf0b7"/>
+    <rect x="386" y="316" width="198" height="28" rx="14" fill="#ffffff" fill-opacity="0.16"/>
+    <rect x="606" y="296" width="104" height="68" rx="34" fill="url(#badge)"/>
+    <text x="658" y="341" text-anchor="middle" font-family="SF Pro Display, Avenir Next, sans-serif" font-size="34" font-weight="800" fill="#091321">D-2</text>
+
+    <path d="M322 418H702L744 504H280L322 418Z" fill="url(#boxTop)"/>
+    <rect x="280" y="504" width="464" height="216" rx="46" fill="url(#boxFace)"/>
+    <path d="M280 504H744V576H280V504Z" fill="#efc886" fill-opacity="0.88"/>
+    <rect x="280.5" y="504.5" width="463" height="215" rx="45.5" fill="none" stroke="#fff0d0" stroke-opacity="0.4"/>
+
+    <path d="M470 418H554V720H470V418Z" fill="#ba8650" fill-opacity="0.82"/>
+    <path d="M512 418L590 504H434L512 418Z" fill="#c58f58"/>
+
+    <rect x="332" y="558" width="116" height="104" rx="28" fill="#fff3da" fill-opacity="0.48"/>
+    <rect x="576" y="558" width="116" height="104" rx="28" fill="#fff3da" fill-opacity="0.48"/>
+    <rect x="334" y="746" width="356" height="44" rx="22" fill="#ffffff" fill-opacity="0.14"/>
+    <text x="512" y="786" text-anchor="middle" font-family="SF Pro Display, Avenir Next, sans-serif" font-size="40" font-weight="700" fill="#f3fbff" fill-opacity="0.78">ORGANIZER</text>
+  </g>
+</svg>
