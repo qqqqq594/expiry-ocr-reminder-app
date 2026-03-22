@@ -224,6 +224,69 @@
         font-size: 13px;
       }
 
+      .queue-panel {
+        display: none;
+        gap: 10px;
+        padding: 14px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .queue-panel.visible {
+        display: grid;
+      }
+
+      .queue-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .queue-title {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .queue-clear {
+        padding: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .queue-hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .queue-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .queue-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 34px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .queue-chip.active {
+        background: rgba(139, 240, 183, 0.14);
+        color: var(--accent-strong);
+      }
+
       .button-row {
         display: flex;
         gap: 10px;
@@ -499,11 +562,19 @@
               <div class="preview-box">
                 <label class="drop" for="photoInput">
                   <strong>사진 첨부</strong>
-                  <span>iPhone에서는 사진 보관함, 파일, 카메라 중 가능한 항목으로 고를 수 있어.</span>
-                  <input id="photoInput" type="file" accept="image/*" />
+                  <span>여러 장을 한 번에 고르면 대기열로 잡아두고, 저장할 때 다음 사진으로 바로 넘어가.</span>
+                  <input id="photoInput" type="file" accept="image/*" multiple />
                 </label>
                 <img id="preview" class="preview" alt="제품 사진 미리보기" />
                 <div id="photoMeta" class="photo-meta"></div>
+                <div id="queuePanel" class="queue-panel">
+                  <div class="queue-head">
+                    <div id="queueTitle" class="queue-title"></div>
+                    <button id="clearQueueButton" class="queue-clear" type="button">대기열 비우기</button>
+                  </div>
+                  <div id="queueHint" class="queue-hint"></div>
+                  <div id="queueList" class="queue-list"></div>
+                </div>
               </div>
 
               <div class="grid">
@@ -604,11 +675,17 @@
         editingId: null,
         draftPhoto: "",
         draftPhotoName: "",
+        photoQueue: [],
       };
 
       const photoInput = document.getElementById("photoInput");
       const preview = document.getElementById("preview");
       const photoMeta = document.getElementById("photoMeta");
+      const queuePanel = document.getElementById("queuePanel");
+      const queueTitle = document.getElementById("queueTitle");
+      const queueHint = document.getElementById("queueHint");
+      const queueList = document.getElementById("queueList");
+      const clearQueueButton = document.getElementById("clearQueueButton");
       const productNameInput = document.getElementById("productName");
       const expiryDateInput = document.getElementById("expiryDate");
       const saveButton = document.getElementById("saveButton");
@@ -626,8 +703,9 @@
       productNameInput.addEventListener("input", renderSchedule);
       expiryDateInput.addEventListener("input", renderSchedule);
       saveButton.addEventListener("click", saveItem);
-      clearButton.addEventListener("click", resetDraft);
+      clearButton.addEventListener("click", handleClearDraft);
       removePhotoButton.addEventListener("click", removePhoto);
+      clearQueueButton.addEventListener("click", clearPhotoQueue);
       copyButton.addEventListener("click", copySchedule);
       filterButtons.forEach((button) =>
         button.addEventListener("click", () => {
@@ -657,19 +735,43 @@
       }
 
       async function onPhotoChange(event) {
-        const [file] = event.target.files || [];
-        if (!file) {
+        const files = [...(event.target.files || [])];
+        if (files.length === 0) {
           return;
         }
 
         try {
-          const dataUrl = await resizeImage(file);
-          state.draftPhoto = dataUrl;
-          state.draftPhotoName = file.name;
+          const resizedPhotos = await Promise.all(
+            files.map(async (file) => ({
+              id: crypto.randomUUID(),
+              name: file.name || "사진",
+              dataUrl: await resizeImage(file),
+            })),
+          );
+
+          if (state.editingId) {
+            state.photoQueue = [];
+            state.draftPhoto = resizedPhotos[0].dataUrl;
+            state.draftPhotoName = resizedPhotos[0].name;
+            if (resizedPhotos.length > 1) {
+              alert("수정 중에는 첫 사진만 적용했어. 여러 장 등록은 새 제품 추가에서 쓰면 된다.");
+            }
+          } else {
+            const shouldSetCurrentPhoto = state.photoQueue.length === 0;
+            state.photoQueue.push(...resizedPhotos);
+            if (shouldSetCurrentPhoto) {
+              syncDraftPhotoWithQueue();
+            }
+          }
+
           renderPhotoPreview();
+          renderPhotoQueue();
+          updateActionButtons();
         } catch (error) {
           console.error(error);
           alert("사진을 읽지 못했어. 다른 사진으로 다시 시도해줘.");
+        } finally {
+          photoInput.value = "";
         }
       }
 
@@ -715,17 +817,116 @@
 
         preview.src = state.draftPhoto;
         preview.style.display = "block";
-        photoMeta.textContent = state.draftPhotoName
-          ? `현재 사진: ${state.draftPhotoName}`
-          : "현재 사진이 저장될 예정이야.";
+        if (!state.editingId && state.photoQueue.length > 0) {
+          photoMeta.textContent = state.draftPhotoName
+            ? `현재 사진: ${state.draftPhotoName} (대기열 ${state.photoQueue.length}장 중 현재 사진)`
+            : `현재 사진이 저장될 예정이야. (대기열 ${state.photoQueue.length}장 중 현재 사진)`;
+        } else {
+          photoMeta.textContent = state.draftPhotoName
+            ? `현재 사진: ${state.draftPhotoName}`
+            : "현재 사진이 저장될 예정이야.";
+        }
         photoMeta.style.display = "block";
       }
 
+      function renderPhotoQueue() {
+        if (state.editingId || state.photoQueue.length === 0) {
+          queuePanel.classList.remove("visible");
+          queueTitle.textContent = "";
+          queueHint.textContent = "";
+          queueList.innerHTML = "";
+          return;
+        }
+
+        queuePanel.classList.add("visible");
+        queueTitle.textContent = `${state.photoQueue.length}장 준비됨`;
+        queueHint.textContent =
+          state.photoQueue.length > 1
+            ? "지금 첫 번째 대기 사진을 등록 중이야. 저장하면 다음 사진으로 바로 넘어간다."
+            : "이 사진까지 저장하면 대기열이 끝나.";
+
+        queueList.innerHTML = "";
+        state.photoQueue.forEach((photo, index) => {
+          const chip = document.createElement("div");
+          chip.className = `queue-chip${index === 0 ? " active" : ""}`;
+          chip.textContent = index === 0 ? `현재 · ${photo.name}` : `${index + 1}번째 · ${photo.name}`;
+          queueList.appendChild(chip);
+        });
+      }
+
+      function updateActionButtons() {
+        if (state.editingId) {
+          saveButton.textContent = "수정 저장";
+        } else if (state.photoQueue.length > 1) {
+          saveButton.textContent = "저장 후 다음";
+        } else {
+          saveButton.textContent = "저장하기";
+        }
+
+        removePhotoButton.textContent =
+          !state.editingId && state.photoQueue.length > 1 ? "현재 사진 제외" : "사진 지우기";
+        removePhotoButton.disabled = !state.draftPhoto;
+      }
+
+      function syncDraftPhotoWithQueue() {
+        const currentPhoto = state.photoQueue[0];
+        if (!currentPhoto) {
+          state.draftPhoto = "";
+          state.draftPhotoName = "";
+          return;
+        }
+
+        state.draftPhoto = currentPhoto.dataUrl;
+        state.draftPhotoName = currentPhoto.name;
+      }
+
       function removePhoto() {
+        if (!state.editingId && state.photoQueue.length > 0) {
+          state.photoQueue.shift();
+          if (state.photoQueue.length > 0) {
+            productNameInput.value = "";
+            expiryDateInput.value = "";
+          }
+          syncDraftPhotoWithQueue();
+          renderPhotoPreview();
+          renderPhotoQueue();
+          updateActionButtons();
+          renderSchedule();
+          return;
+        }
+
         state.draftPhoto = "";
         state.draftPhotoName = "";
         photoInput.value = "";
         renderPhotoPreview();
+        renderPhotoQueue();
+        updateActionButtons();
+      }
+
+      function clearPhotoQueue() {
+        if (state.photoQueue.length === 0) {
+          return;
+        }
+
+        const shouldClear = confirm(`대기 중인 사진 ${state.photoQueue.length}장을 모두 비울까?`);
+        if (!shouldClear) {
+          return;
+        }
+
+        resetDraft();
+      }
+
+      function handleClearDraft() {
+        if (!state.editingId && state.photoQueue.length > 1) {
+          const shouldClear = confirm(
+            `지금 대기 중인 사진 ${state.photoQueue.length}장도 같이 비울까?`,
+          );
+          if (!shouldClear) {
+            return;
+          }
+        }
+
+        resetDraft();
       }
 
       function saveItem() {
@@ -771,19 +972,41 @@
         persistItems();
         renderItemList();
         renderSchedule();
-        saveButton.textContent = "저장하기";
-        alert(state.editingId ? "수정해서 저장했어." : "제품을 저장했어.");
-        if (!state.editingId) {
-          resetDraft();
+        if (state.editingId) {
+          alert("수정해서 저장했어.");
+          updateActionButtons();
+          return;
         }
+
+        if (state.photoQueue.length > 1) {
+          state.photoQueue.shift();
+          productNameInput.value = "";
+          expiryDateInput.value = "";
+          syncDraftPhotoWithQueue();
+          renderPhotoPreview();
+          renderPhotoQueue();
+          renderSchedule();
+          updateActionButtons();
+          productNameInput.focus();
+          alert("제품을 저장했고 다음 사진으로 넘어갔어.");
+          return;
+        }
+
+        alert("제품을 저장했어.");
+        resetDraft();
       }
 
       function resetDraft() {
         state.editingId = null;
+        state.photoQueue = [];
         productNameInput.value = "";
         expiryDateInput.value = "";
-        saveButton.textContent = "저장하기";
-        removePhoto();
+        state.draftPhoto = "";
+        state.draftPhotoName = "";
+        photoInput.value = "";
+        renderPhotoPreview();
+        renderPhotoQueue();
+        updateActionButtons();
         renderItemList();
         renderSchedule();
       }
@@ -795,12 +1018,14 @@
         }
 
         state.editingId = item.id;
+        state.photoQueue = [];
         productNameInput.value = item.productName;
         expiryDateInput.value = item.expiryDate;
         state.draftPhoto = item.photo || "";
         state.draftPhotoName = item.productName;
-        saveButton.textContent = "수정 저장";
         renderPhotoPreview();
+        renderPhotoQueue();
+        updateActionButtons();
         renderItemList();
         renderSchedule();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1042,7 +1267,9 @@
           .replaceAll("'", "&#39;");
       }
 
+      updateActionButtons();
       renderPhotoPreview();
+      renderPhotoQueue();
       renderFilterButtons();
       renderItemList();
       renderSchedule();
